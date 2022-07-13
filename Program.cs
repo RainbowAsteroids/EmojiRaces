@@ -2,6 +2,7 @@
 using DSharpPlus.CommandsNext;
 
 namespace EmojiRaces;
+
 public class Program {
 	static void Main() {
 		MainAsync().GetAwaiter().GetResult();
