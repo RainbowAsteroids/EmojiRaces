@@ -2,9 +2,12 @@ using DSharpPlus.Entities;
 
 namespace EmojiRaces;
 
+
+
 // Singleton holding server state
 // TODO: Store this state on disk whenever the state changes
 public class ServerStates {
+    public class InvalidChannelException : Exception { }
     // Do singleton stuff
 	private static readonly object _lock = new object();
 	private static ServerStates? _instance = null;
@@ -25,10 +28,23 @@ public class ServerStates {
     private Dictionary<DiscordGuild, DiscordChannel> _gameChannels = new Dictionary<DiscordGuild, DiscordChannel>();
 
     public DiscordChannel? GetGameChannel(DiscordGuild g) {
-        if (_gameChannels.ContainsKey(g)) {
-            return _gameChannels[g];
+        lock(_gameChannelsLock) {
+            if (_gameChannels.ContainsKey(g)) {
+                return _gameChannels[g];
+            } else {
+                return null;
+            }
+        }
+    }
+
+    // Sets the guild's game channel. Raises InvalidChannelException if the channel isn't a text channel
+    public void SetGameChannel(DiscordGuild g, DiscordChannel c) {
+        if (c.Type != DSharpPlus.ChannelType.Text) {
+            throw new InvalidChannelException();
         } else {
-            return null;
+            lock(_gameChannelsLock) {
+                _gameChannels[g] = c;
+            }
         }
     }
 
@@ -56,4 +72,25 @@ public class ServerStates {
 
     public void IncrementPot(DiscordGuild g, int increment) => SetPot(g, GetPot(g) + increment);
     public void FoldPot(DiscordGuild g) => SetPot(g, GetPot(g) / 2);
+
+    // Store instances of GameLoop to place bets against
+    private readonly object _gameLoopsLock = new object();
+    private Dictionary<DiscordGuild, GameLoop?> _gameLoops = new Dictionary<DiscordGuild, GameLoop?>();
+
+    public GameLoop? GetGameLoop(DiscordGuild g) {
+        lock(_gameLoopsLock) {
+            if (_gameLoops.ContainsKey(g)) {
+                return _gameLoops[g];
+            } else {
+                _gameLoops[g] = null;
+                return null;
+            }
+        }
+    }
+
+    public void SetGameLoop(DiscordGuild g, GameLoop? rp) {
+        lock(_gameLoopsLock) {
+            _gameLoops[g] = rp;
+        }
+    }
 }
