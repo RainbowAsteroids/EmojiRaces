@@ -27,6 +27,16 @@ public class ServerModule : BaseCommandModule {
             }
         }
     }
+    [Command("gamechannel")]
+    public async Task GetGameChannelCommand(CommandContext ctx) {
+        DiscordChannel? c = ServerStates.Instance.GetGameChannel(ctx.Guild);
+
+        if (c == null) {
+            await ctx.RespondAsync("No game channel has been set! Tell an admin to use the `gamechannel` command to set a game channel!");
+        } else {
+            await ctx.RespondAsync($"The game channel is {c.Mention}");
+        }
+    }
 
     [Command("pot")]
     public async Task PotCommand(CommandContext ctx) {
