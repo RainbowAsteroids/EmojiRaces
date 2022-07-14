@@ -1,14 +1,12 @@
-using DSharpPlus;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
-using DSharpPlus.Entities;
 
 namespace EmojiRaces;
 
 public class BetModule : BaseCommandModule {
-	[Command("placebet"), Aliases("bet")]
+    [Command("placebet"), Aliases("bet")]
     public async Task PlaceBetCommand(CommandContext ctx, string racer, int amount) {
-		var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
+        var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
             await ctx.RespondAsync("A server admin needs to set the game channel with the `gamechannel` command!");
         } else {
@@ -26,11 +24,11 @@ public class BetModule : BaseCommandModule {
                 }
             }
         }
-	}
+    }
 
     [Command("liftbet"), Aliases("removebet")]
     public async Task LiftBetCommand(CommandContext ctx, string racer, int amount) {
-		var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
+        var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
             await ctx.RespondAsync("A server admin needs to set the game channel with the `gamechannel` command!");
         } else {
@@ -52,11 +50,11 @@ public class BetModule : BaseCommandModule {
                 }
             }
         }
-	}
+    }
 
     [Command("bets")]
     public async Task ViewBetsCommand(CommandContext ctx) {
-		var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
+        var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
             await ctx.RespondAsync("A server admin needs to set the game channel with the `gamechannel` command!");
         } else {
@@ -76,13 +74,5 @@ public class BetModule : BaseCommandModule {
                 }
             }
         }
-	}
-
-	/*
-	[Command("give")]
-	public async Task GiveCommmand(CommandContext ctx, int amount) {
-		UserStates.Instance.IncrementBalance(ctx.User, amount);
-		await ctx.RespondAsync("Balance incrememted.");
-	}
-	*/
+    }
 }

@@ -1,39 +1,42 @@
 using DSharpPlus;
 using DSharpPlus.Entities;
+using Serilog;
 
 namespace EmojiRaces;
 
 public class GameLoop {
     public RacePreface? RP { get; private set; }
-	private DiscordChannel _gameChannel;
-	private DiscordMessage? _gameMessage;
+    private DiscordChannel _gameChannel;
+    private DiscordMessage? _gameMessage;
     private CancellationTokenSource _source = new CancellationTokenSource();
     public CancellationToken Token { get => _source.Token; }
 
-	public GameLoop(DiscordChannel c) {
-		_gameChannel = c;
-	}
+    public GameLoop(DiscordChannel c) {
+        _gameChannel = c;
+    }
 
-	public async Task SetGameChannel(DiscordChannel c) {
-		if (c.Type != ChannelType.Text) {
-			throw new ServerStates.InvalidChannelException();
-		} else {
-			_gameChannel = c;
-			if (_gameMessage != null) {
-				var messageBuilder = new DiscordMessageBuilder() {
-					Content = _gameMessage.Content,
-				};
-				messageBuilder.AddEmbeds(_gameMessage.Embeds);
-				_gameMessage = await c.SendMessageAsync(messageBuilder);
-			}
-		}
-	}
+    public async Task SetGameChannel(DiscordChannel c) {
+        if (c.Type != ChannelType.Text) {
+            throw new ServerStates.InvalidChannelException();
+        } else {
+            _gameChannel = c;
+            if (_gameMessage != null) {
+                var messageBuilder = new DiscordMessageBuilder() {
+                    Content = _gameMessage.Content,
+                };
+                messageBuilder.AddEmbeds(_gameMessage.Embeds);
+                _gameMessage = await c.SendMessageAsync(messageBuilder);
+            }
+        }
+    }
 
     public void Stop() {
+        Log.Warning($"Stopping game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
         _source.Cancel();
     }
 
     public async Task Start() {
+        Log.Information($"Starting game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
         RP = new RacePreface(_gameChannel.Guild);
         // Advertise the race
         _gameMessage = await _gameChannel.SendMessageAsync(new DiscordEmbedBuilder() { 
@@ -75,12 +78,12 @@ public class GameLoop {
         cancelSource = new CancellationTokenSource();
         RP.BetsChanged += render;
         // Wait for a bet
-        // TODO: Handle GameLoop.Cancel
+        // TODO: Handle GameLoop.Stop
         try { await Task.Delay(-1, cancelSource.Token); }
         catch (TaskCanceledException) { }
 
         // Setup timestamp for when the race will start
-        const int betTime = 30;
+        const int betTime = 120;
         epoch = (DateTimeOffset.UtcNow + new TimeSpan(0, 0, betTime)).ToUnixTimeSeconds();
         await Task.Delay(100);
         await render();
@@ -101,9 +104,8 @@ public class GameLoop {
             await Task.Delay(frametime);
 
         // Reset the loop
-        if (!Token.IsCancellationRequested) {
-            await Task.Delay(10000);
-            await Start();
-        }
+        try { await Task.Delay(10000, Token); } 
+        catch (TaskCanceledException) { return; }
+        await Start();
     }
  }

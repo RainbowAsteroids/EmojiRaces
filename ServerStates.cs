@@ -1,28 +1,28 @@
 using System.Text.Json;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using Serilog;
 
 namespace EmojiRaces;
 
 // Singleton holding server state
-// TODO: Store this state on disk whenever the state changes
 public class ServerStates {
     public class InvalidChannelException : Exception { }
     // Do singleton stuff
-	private static readonly object _lock = new object();
-	private static ServerStates? _instance = null;
-	public static ServerStates Instance {
-		get {
-			lock(_lock) {
-				if (_instance == null) {
-					throw new NullReferenceException();
-				}
-				return _instance;
-			}
-		}
-	}
+    private static readonly object _lock = new object();
+    private static ServerStates? _instance = null;
+    public static ServerStates Instance {
+        get {
+            lock(_lock) {
+                if (_instance == null) {
+                    throw new NullReferenceException();
+                }
+                return _instance;
+            }
+        }
+    }
 
-	// Do object stuff
+    // Do object stuff
     // Store the preferred channel to place game posts
     private readonly object _gameChannelsLock = new object();
     private Dictionary<DiscordGuild, DiscordChannel> _gameChannels = new Dictionary<DiscordGuild, DiscordChannel>();
@@ -30,29 +30,26 @@ public class ServerStates {
     private const string gameChannelsFileName = "gamechannels.json";
     private const string potsFileName = "pots.json";
     public static async Task Initialize(DiscordClient client) {
-        System.Console.WriteLine("Initialization start!");
+        Log.Information("Initializing ServerStates.");
         _instance = new ServerStates();
 
         try { // Read game channels
             using var openStream = File.OpenRead(gameChannelsFileName);
             var d = await JsonSerializer.DeserializeAsync<Dictionary<ulong, ulong>>(openStream);
             if (d == null) {
-                // TODO: Log failure
-                System.Console.WriteLine("FAIL: Couldn't deserialize game channels");   
+                Log.Error("Could not deserialize gameChannels on disk.");  
             } else {
                 // Convert d into Dictionary<DiscordGuild, DiscordChannel>
                 foreach (var (gid, cid) in d) {
                     var guild = await client.GetGuildAsync(gid, true);
                     if (guild == null) {
-                        // TODO: Log failure
-                        System.Console.WriteLine("FAIL: Couldn't get guild for game channel");
+                        Log.Error($"Could not find guild {gid} for _gameChannels.");
                         continue;
                     }
 
                     var channel = await client.GetChannelAsync(cid);
                     if (channel == null) {
-                        // TODO: Log failure
-                        System.Console.WriteLine("FAIL: Couldn't get channel for game channel");
+                        Log.Error($"Could not find channel {cid} for _gameChannels.");
                         continue;
                     }
 
@@ -60,23 +57,20 @@ public class ServerStates {
                 }
             }
         } catch (FileNotFoundException) {
-            // TODO: Log failure
-            System.Console.WriteLine("FAIL: Couldn't read gamechannels.json");
+            Log.Error("Could not find gameChannels on disk.");
         }
 
         try {
             using var openStream = File.OpenRead(potsFileName);
             var p = await JsonSerializer.DeserializeAsync<Dictionary<ulong, int>>(openStream);
             if (p == null) {
-                // TODO: Log failure
-                System.Console.WriteLine("FAIL: Couldn't deserialize pots");
+                Log.Error("Could not deserialize pots on disk.");  
             } else {
                 // Convert p into Dictionary<DiscordGuild, int>
                 foreach (var (gid, amount) in p) {
                     var guild = await client.GetGuildAsync(gid, true);
                     if (guild == null) {
-                        // TODO: Log failure
-                        System.Console.WriteLine("FAIL: Couldn't get guild for pot");
+                        Log.Error($"Could not find guild {gid} for _pots.");
                         continue;
                     }
 
@@ -84,14 +78,14 @@ public class ServerStates {
                 }
             }
         } catch (FileNotFoundException) {
-            // TODO: Log failure
-            System.Console.WriteLine("FAIL: Couldn't read pots.json");
+            Log.Error("Could not find pots on disk.");
         }
 
-        System.Console.WriteLine("Initialization end!");
+        Log.Information("Finished initializing ServerStates.");
     }
 
     private void StoreState() {
+        Log.Information("Storing ServerStates to disk.");
         // Store game channels
         var d = new Dictionary<ulong, ulong>();
         lock(_gameChannelsLock)
