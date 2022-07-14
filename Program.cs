@@ -5,9 +5,10 @@ using DSharpPlus.Entities;
 namespace EmojiRaces;
 
 public class Program {
-	static void Main() {
+	public static CancellationTokenSource CancelSource = new CancellationTokenSource();
+
+	static void Main() =>
 		MainAsync().GetAwaiter().GetResult();
-	}
 
 	public static async Task StartGameLoop(DiscordGuild g) {
 		var gameChannel = ServerStates.Instance.GetGameChannel(g);
@@ -30,12 +31,16 @@ public class Program {
 			Intents = DiscordIntents.Guilds | DiscordIntents.GuildMessages
 		});
 
+		// Initialize state singletons
+		Task.WaitAll(ServerStates.Initialize(discord), UserStates.Initialize(discord));
+
 		var commands = discord.UseCommandsNext(new CommandsNextConfiguration() {
 			StringPrefixes = new[] { "~" }
 		});
 		commands.RegisterCommands<BalanceModule>();
 		commands.RegisterCommands<ServerModule>();
 		commands.RegisterCommands<BetModule>();
+		commands.RegisterCommands<AdministrationModule>();
 
 		discord.GuildDownloadCompleted += async (client, args) => {
 			foreach (var (gid, guild) in args.Guilds) {
@@ -47,8 +52,15 @@ public class Program {
 			await StartGameLoop(args.Guild);
 		};
 
+		discord.Ready += async (client, args) => {
+			System.Console.WriteLine("Ready!");
+		};
+
 		await discord.ConnectAsync();
 
-		await Task.Delay(-1);
+		try { await Task.Delay(-1, CancelSource.Token); }
+		catch (TaskCanceledException) { }
+
+		await discord.DisconnectAsync();
 	}
 }

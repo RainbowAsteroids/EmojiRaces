@@ -1,3 +1,5 @@
+using System.Text.Json;
+using DSharpPlus;
 using DSharpPlus.Entities;
 
 namespace EmojiRaces;
@@ -5,37 +7,61 @@ namespace EmojiRaces;
 // TODO: Store this state on disk whenever the state changes
 public sealed class UserStates {
 	// Do singleton stuff
-	private static readonly object s_lock = new object();
-	private static UserStates? s_instance = null;
+	private static readonly object _lock = new object();
+	private static UserStates? _instance = null;
 	public static UserStates Instance {
 		get {
-			lock(s_lock) {
-				if (s_instance == null) {
-					s_instance = new UserStates();
+			lock(_lock) {
+				if (_instance == null) {
+					throw new NullReferenceException();
 				}
-				return s_instance;
+				return _instance;
 			}
 		}
 	}
+
+	private const string balancesFileName = "balances.json";
+	public static async Task Initialize(DiscordClient client) {
+        _instance = new UserStates();
+
+        try {
+            using var openStream = File.OpenRead(balancesFileName);
+            var d = await JsonSerializer.DeserializeAsync<Dictionary<ulong, int>>(openStream);
+            if (d == null) {
+                // TODO: Log failure
+				System.Console.WriteLine("FAIL: Couldn't deserialize balances");
+            } else {
+                _instance._balances = d;
+            }
+        } catch (FileNotFoundException) {
+            // TODO: Log failure
+			System.Console.WriteLine("FAIL: Couldn't read balances.json");
+        }
+    }
+
+    public void StoreState() {
+		lock(_balanceLock)
+			File.WriteAllText(balancesFileName, JsonSerializer.Serialize(_balances));
+    }
 
 	// Do object stuff
 	// Balance management
 	private const int _defaultBalance = 1000;
 	private readonly object _balanceLock = new object();
-	private Dictionary<DiscordUser, int> _balances = new Dictionary<DiscordUser, int>();
+	private Dictionary<ulong, int> _balances = new Dictionary<ulong, int>();
 
 	// Sets m's balance.
 	public void SetBalance(DiscordUser m, int balance) {
-		lock(_balanceLock) {
-			_balances[m] = balance;
-		}
+		lock(_balanceLock)
+			_balances[m.Id] = balance;
+		StoreState();
 	}
 
 	// Returns m's balance.
 	public int GetBalance(DiscordUser m) {
 		lock(_balanceLock) {
-			if (_balances.ContainsKey(m)) {
-				return _balances[m];
+			if (_balances.ContainsKey(m.Id)) {
+				return _balances[m.Id];
 			} else {
 				SetBalance(m, _defaultBalance);
 				return _defaultBalance;
@@ -49,7 +75,7 @@ public sealed class UserStates {
 	// Reduces m's balance by decrement. Returns if balance > decrement before the subtraction occurs.
 	public bool DecrementBalance(DiscordUser m, int decrement) {
 		var balance = GetBalance(m);
-		if (balance > decrement) {
+		if (balance >= decrement) {
 			SetBalance(m, balance - decrement);
 			return true;
 		} else {

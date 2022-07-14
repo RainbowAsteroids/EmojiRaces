@@ -3,3 +3,7 @@ token.txt
 obj/
 bin/
 .vscode/
+
+gamechannels.json
+pots.json
+balances.json

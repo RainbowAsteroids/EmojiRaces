@@ -54,7 +54,7 @@ public class GameLoop {
 
             var text = "The racers are:\n\n";
             foreach (var (racer, amount) in RP.BetsByRacer)
-                text += $"{racer} `{RacePreface.RacerDictionary[racer]}` ({amount} shekelz bet)\n\n";
+                text += $"{racer} `{RacePreface.RacerDictionary[racer]}` ({amount} shekelz bet in total)\n\n";
             embedBuilder.AddField("\u200B", text);
             
             embedBuilder.AddField("\u200B", $"The server's pot is at {ServerStates.Instance.GetPot(_gameChannel.Guild)} sheklez");
