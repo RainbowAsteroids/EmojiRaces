@@ -11,4 +11,9 @@ public class AdministrationModule : BaseCommandModule {
         Log.Information("CloseCommand invoked.");
         Program.CancelSource.Cancel();
     }
+
+    [Command("invite")]
+    public async Task InviteCommand(CommandContext ctx) {
+        await ctx.RespondAsync("Invite this bot with the following link:\nhttps://discord.com/api/oauth2/authorize?client_id=996308448159465534&permissions=68608&scope=bot");
+    }
 }
