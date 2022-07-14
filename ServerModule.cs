@@ -18,7 +18,7 @@ public class ServerModule : BaseCommandModule {
                     
                     var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
                     if (gameLoop != null) // Change channels
-                        await gameLoop.SetGameChannel(c);
+                        gameLoop.SetGameChannel(c);
                     else // Build a gameloop
                         await Program.StartGameLoop(ctx.Guild);
                 } catch (ServerStates.InvalidChannelException) {

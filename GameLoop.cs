@@ -15,18 +15,11 @@ public class GameLoop {
         _gameChannel = c;
     }
 
-    public async Task SetGameChannel(DiscordChannel c) {
+    public void SetGameChannel(DiscordChannel c) {
         if (c.Type != ChannelType.Text) {
             throw new ServerStates.InvalidChannelException();
         } else {
             _gameChannel = c;
-            if (_gameMessage != null) {
-                var messageBuilder = new DiscordMessageBuilder() {
-                    Content = _gameMessage.Content,
-                };
-                messageBuilder.AddEmbeds(_gameMessage.Embeds);
-                _gameMessage = await c.SendMessageAsync(messageBuilder);
-            }
         }
     }
 
