@@ -1,5 +1,6 @@
 using DSharpPlus;
 using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Exceptions;
 using DSharpPlus.Entities;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -55,6 +56,32 @@ public class Program {
         commands.RegisterCommands<BetModule>();
         commands.RegisterCommands<AdministrationModule>();
         commands.SetHelpFormatter<HelpFormatter>();
+
+        commands.CommandErrored += async (ext, args) => { 
+            if (args.Exception is CommandNotFoundException) {
+                CommandContext ctx = args.Context;
+                await commands.ExecuteCommandAsync(
+                    commands.CreateContext(
+                        ctx.Message, 
+                        CommandPrefix, 
+                        commands.RegisteredCommands["help"]
+                    )
+                );
+            } else if (args.Exception is ArgumentException) {
+                CommandContext ctx = args.Context;
+                string commandName = ctx.Command.Name;
+                await commands.ExecuteCommandAsync(
+                    commands.CreateContext(
+                        ctx.Message, 
+                        CommandPrefix, 
+                        commands.RegisteredCommands["help"],
+                        commandName
+                    )
+                );
+            } else {
+                Log.Warning(args.Exception, "CommandErrored invoked.");
+            }
+        };
 
         discord.GuildDownloadCompleted += async (client, args) => {
             foreach (var (gid, guild) in args.Guilds) {
