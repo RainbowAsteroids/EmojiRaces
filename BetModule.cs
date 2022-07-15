@@ -1,3 +1,4 @@
+using System.Text;
 using DSharpPlus.CommandsNext;
 using DSharpPlus.CommandsNext.Attributes;
 
@@ -52,26 +53,21 @@ public class BetModule : BaseCommandModule {
         }
     }
 
-    [Command("bets"), Description("Tells you the bets you have placed.")]
+    [Command("bets"), Aliases("listbets"), Description("Tells you the bets you have placed.")]
     public async Task ViewBetsCommand(CommandContext ctx) {
         var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
             await ctx.RespondAsync("A server admin needs to set the game channel with the `gamechannel` command!");
         } else {
-            var racePreface = gameLoop.RP;
-            if (racePreface == null) {
-                await ctx.RespondAsync("You cannot view your bets on a race that's ongoing.");
+            Dictionary<string, int> bets = gameLoop.GetBets(ctx.User);
+            if (bets == null || bets.Count == 0) {
+                await ctx.RespondAsync("You don't have any bets on any racers.");
             } else {
-                var bets = racePreface.GetBets(ctx.User);
-                if (bets.Count > 0) {
-                    var text = "You placed bets on:\n";
-                    foreach (var (racer, amount) in bets)
-                        if (amount > 0)
-                            text += $"{racer} for {amount} shekelz\n";
-                    await ctx.RespondAsync(text);
-                } else {
-                    await ctx.RespondAsync("You don't have any bets on any racers.");
-                }
+                var sb = new StringBuilder("You placed bets on:\n");
+                foreach (var (racer, amount) in bets)
+                    if (amount > 0)
+                        sb.Append($"{racer} for {amount} shekelz\n");
+                await ctx.RespondAsync(sb.ToString());
             }
         }
     }

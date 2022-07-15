@@ -10,6 +10,8 @@ public class GameLoop {
     private DiscordMessage? _gameMessage;
     private CancellationTokenSource _source = new CancellationTokenSource();
     public CancellationToken Token { get => _source.Token; }
+    public bool GameOver { get; private set; } = false;
+    private Dictionary<DiscordUser, Dictionary<string, int>>? _bets;
 
     public GameLoop(DiscordChannel c) {
         _gameChannel = c;
@@ -17,12 +19,23 @@ public class GameLoop {
 
     private event Action stopEvent = () => { };
     public void Stop() {
-        Log.Warning($"Stopping game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
+        Log.Information($"Stopping game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
         _source.Cancel();
         stopEvent();
+
+        // Reverse any bets if the game isn't over.
+        if (!GameOver) {
+            foreach (var (m, d) in (RP == null ? _bets : RP.Bets)) {
+                var acc = 0;
+                foreach (var (_, amount) in d)
+                    acc += amount;
+                UserStates.Instance.IncrementBalance(m, acc);
+            }
+        }
     }
 
     public async Task Start() {
+        GameOver = false;
         Log.Information($"Starting game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
         RP = new RacePreface(_gameChannel.Guild);
         // Advertise the race
@@ -82,6 +95,7 @@ public class GameLoop {
 
         // Do the race
         var race = new Race(new List<string>(RP.Racers), _gameMessage, RP.Bets);
+        _bets = RP.Bets;
         RP = null;
 
         const int frametime = 1000;
@@ -92,8 +106,13 @@ public class GameLoop {
             await Task.Delay(frametime);
 
         // Reset the loop
+        GameOver = true;
+        _bets = null;
         try { await Task.Delay(10000, Token); } 
         catch (TaskCanceledException) { return; }
         await Start();
     }
- }
+ 
+    public Dictionary<string, int>? GetBets(DiscordUser m) =>
+        RP == null ? _bets?.GetValueOrDefault(m, null) : RP.Bets.GetValueOrDefault(m, null);
+}
