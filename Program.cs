@@ -8,6 +8,7 @@ namespace EmojiRaces;
 
 public class Program {
     public static CancellationTokenSource CancelSource = new CancellationTokenSource();
+    public static string CommandPrefix = ";;";
 
     static void Main() =>
         MainAsync().GetAwaiter().GetResult();
@@ -47,12 +48,13 @@ public class Program {
         Task.WaitAll(ServerStates.Initialize(discord), UserStates.Initialize(discord));
 
         var commands = discord.UseCommandsNext(new CommandsNextConfiguration() {
-            StringPrefixes = new[] { "~" }
+            StringPrefixes = new[] { CommandPrefix }
         });
         commands.RegisterCommands<BalanceModule>();
         commands.RegisterCommands<ServerModule>();
         commands.RegisterCommands<BetModule>();
         commands.RegisterCommands<AdministrationModule>();
+        commands.SetHelpFormatter<HelpFormatter>();
 
         discord.GuildDownloadCompleted += async (client, args) => {
             foreach (var (gid, guild) in args.Guilds) {

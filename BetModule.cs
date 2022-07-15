@@ -4,7 +4,7 @@ using DSharpPlus.CommandsNext.Attributes;
 namespace EmojiRaces;
 
 public class BetModule : BaseCommandModule {
-    [Command("placebet"), Aliases("bet")]
+    [Command("bet"), Aliases("placebet"), Description("Places or increases a bet on a racer. Cannot be done while a race is happening.")]
     public async Task PlaceBetCommand(CommandContext ctx, string racer, int amount) {
         var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
@@ -26,7 +26,7 @@ public class BetModule : BaseCommandModule {
         }
     }
 
-    [Command("liftbet"), Aliases("removebet")]
+    [Command("liftbet"), Aliases("removebet", "decbet", "unbet"), Description("Removes or decreases a bet on a racer. Cannot be done while a race is happening.")]
     public async Task LiftBetCommand(CommandContext ctx, string racer, int amount) {
         var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
@@ -52,7 +52,7 @@ public class BetModule : BaseCommandModule {
         }
     }
 
-    [Command("bets")]
+    [Command("bets"), Description("Tells you the bets you have placed.")]
     public async Task ViewBetsCommand(CommandContext ctx) {
         var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
         if (gameLoop == null) {
