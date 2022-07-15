@@ -15,17 +15,11 @@ public class GameLoop {
         _gameChannel = c;
     }
 
-    public void SetGameChannel(DiscordChannel c) {
-        if (c.Type != ChannelType.Text) {
-            throw new ServerStates.InvalidChannelException();
-        } else {
-            _gameChannel = c;
-        }
-    }
-
+    private event Action stopEvent = () => { };
     public void Stop() {
         Log.Warning($"Stopping game loop for guild {_gameChannel.Guild} in channel {_gameChannel}");
         _source.Cancel();
+        stopEvent();
     }
 
     public async Task Start() {
@@ -70,8 +64,9 @@ public class GameLoop {
         await render();
         cancelSource = new CancellationTokenSource();
         RP.BetsChanged += render;
+        stopEvent += () => cancelSource.Cancel(); // Stop the loop in the event of a cancellation
+
         // Wait for a bet
-        // TODO: Handle GameLoop.Stop
         try { await Task.Delay(-1, cancelSource.Token); }
         catch (TaskCanceledException) { }
 

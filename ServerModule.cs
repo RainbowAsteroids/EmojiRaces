@@ -9,20 +9,19 @@ public class ServerModule : BaseCommandModule {
     [Command("gamechannel"), Aliases("gc")]
     [Description("Sets the channel the bot advertises and runs races on. If run without channel parameter, it will return the game channel the bot currently uses.")]
     public async Task GameChannelCommand(CommandContext ctx, DiscordChannel? channel = null) {
-        if (channel != null) {
-            if (ctx.Member != null) {
+        if (channel != null) { // Setting the game channel
+            if (ctx.Member != null) { // Checking perms
                 if (!PermissionMethods.HasPermission(ctx.Member.PermissionsIn(ctx.Channel), Permissions.ManageGuild)) {
                     await ctx.RespondAsync("You do not have the \"Manage Server\" permission!");
-                } else {
+                } else { // Acutally setting the game channel
                     try {
                         ServerStates.Instance.SetGameChannel(ctx.Guild, channel);
                         await ctx.RespondAsync("Game channel set!");
                         
                         var gameLoop = ServerStates.Instance.GetGameLoop(ctx.Guild);
-                        if (gameLoop != null) // Change channels
-                            gameLoop.SetGameChannel(channel);
-                        else // Build a gameloop
-                            await Program.StartGameLoop(ctx.Guild);
+                        if (gameLoop != null)
+                            gameLoop.Stop(); // Clean up if the gameloop is already running
+                        await Program.StartGameLoop(ctx.Guild); // Build a gameloop
                     } catch (ServerStates.InvalidChannelException) {
                         await ctx.RespondAsync("The channel you specified was not a text channel!");
                     }
