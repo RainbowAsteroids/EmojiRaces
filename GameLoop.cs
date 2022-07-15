@@ -89,7 +89,7 @@ public class GameLoop {
         var race = new Race(new List<string>(RP.Racers), _gameMessage, RP.Bets);
         RP = null;
 
-        const int frametime = 2000;
+        const int frametime = 1000;
 
         await race.Render(new Race.RenderDamage(Race.RenderDamage.DamageType.Start, ""));
         await Task.Delay(frametime);

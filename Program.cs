@@ -67,6 +67,14 @@ public class Program {
             await StartGameLoop(args.Guild);
         };
 
+        discord.ClientErrored += async (client, args) => {
+            Log.Error(args.Exception, "ClientErrored invoked.");
+        };
+
+        discord.SocketErrored += async (client, args) => {
+            Log.Error(args.Exception, "SocketErrored invoked.");
+        };
+
         discord.Ready += async (client, args) => {
             Log.Information($"EmojiRaces Ready. Logged in as {client.CurrentUser}.");
         };
